@@ -3,14 +3,19 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
 class Client extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuids;
 
     protected $keyType = 'string';
     public $incrementing = false;
+
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+    ];
 
     protected $fillable = [
         'user_id',
@@ -18,6 +23,8 @@ class Client extends Model
         'prenom',
         'telephone',
         'email',
+        'confirmation_code',
+        'email_verified_at',
     ];
 
     public function user()
