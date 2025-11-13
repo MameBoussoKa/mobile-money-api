@@ -20,17 +20,18 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 // Register endpoint for clients
 use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\Auth\EmailConfirmationController;
+use App\Http\Controllers\Auth\SmsConfirmationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\ClientController;
 use Illuminate\Support\Facades\Route as RouteFacade;
 
 RouteFacade::post('/register', [RegisterController::class, 'register']);
 RouteFacade::post('/login', [LoginController::class, 'login']);
-RouteFacade::post('/confirm-email', [EmailConfirmationController::class, 'confirm']);
+RouteFacade::post('/confirm-sms', [SmsConfirmationController::class, 'confirm']);
 
 // Protected client routes
 RouteFacade::middleware('auth:sanctum')->group(function () {
+    RouteFacade::post('/logout', [LoginController::class, 'logout']);
     RouteFacade::get('/client/balance', [ClientController::class, 'getBalance']);
     RouteFacade::post('/client/pay', [ClientController::class, 'pay']);
     RouteFacade::post('/client/transfer', [ClientController::class, 'transfer']);

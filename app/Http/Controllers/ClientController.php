@@ -73,13 +73,14 @@ class ClientController extends Controller
      * @OA\Post(
      *     path="/api/client/pay",
      *     tags={"Client"},
-     *     summary="Make a payment to a merchant",
+     *     summary="Make a payment to a recipient",
      *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"marchand_id","montant"},
-     *             @OA\Property(property="marchand_id", type="string", example="uuid-marchand"),
+     *             required={"montant"},
+     *             @OA\Property(property="recipient_telephone", type="string", example="1234567890"),
+     *             @OA\Property(property="marchand_code", type="string", example="MARCHAND-123"),
      *             @OA\Property(property="montant", type="number", format="float", example=500.00)
      *         )
      *     ),
@@ -91,22 +92,37 @@ class ClientController extends Controller
      *             @OA\Property(property="message", type="string", example="Paiement effectué avec succès."),
      *             @OA\Property(property="data", type="object",
      *                 @OA\Property(property="transaction_id", type="string", example="uuid-transaction"),
-     *                 @OA\Property(property="nouveau_solde", type="number", format="float", example=1000.50)
+     *                 @OA\Property(property="nouveau_solde", type="number", format="float", example=500.00)
      *             )
      *         )
      *     ),
-     *     @OA\Response(response=400, description="Solde insuffisant"),
+     *     @OA\Response(response=400, description="Solde insuffisant ou destinataire invalide"),
      *     @OA\Response(response=401, description="Non autorisé"),
-     *     @OA\Response(response=403, description="Email non confirmé"),
-     *     @OA\Response(response=404, description="Marchand non trouvé")
+     *     @OA\Response(response=403, description="Email non confirmé")
      * )
      */
     public function pay(Request $request): JsonResponse
     {
         $request->validate([
-            'marchand_id' => 'required|string|exists:marchands,id',
             'montant' => 'required|numeric|min:0.01',
+            'recipient_telephone' => 'nullable|string|exists:clients,telephone',
+            'marchand_code' => 'nullable|string|exists:marchands,codeMarchand',
         ]);
+
+        // Ensure only one recipient type is provided
+        if (!$request->recipient_telephone && !$request->marchand_code) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Veuillez fournir un numéro de téléphone destinataire ou un code marchand.',
+            ], 400);
+        }
+
+        if ($request->recipient_telephone && $request->marchand_code) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Veuillez fournir soit un numéro de téléphone, soit un code marchand, pas les deux.',
+            ], 400);
+        }
 
         $user = Auth::user();
         $client = $user->client;
@@ -119,20 +135,66 @@ class ClientController extends Controller
         }
 
         $compte = $client->compte;
-        $marchand = Marchand::find($request->marchand_id);
 
-        if (!$marchand) {
+        if (!$compte) {
             return response()->json([
                 'success' => false,
-                'message' => 'Marchand non trouvé.',
+                'message' => 'Aucun compte trouvé.',
             ], 404);
         }
 
-        if (!$compte || !$compte->debiter($request->montant)) {
+        $recipientType = null;
+        $recipientId = null;
+
+        if ($request->recipient_telephone) {
+            $recipient = Client::where('telephone', $request->recipient_telephone)->first();
+            if (!$recipient || !$recipient->email_verified_at) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Destinataire invalide ou email non confirmé.',
+                ], 400);
+            }
+            if ($recipient->id === $client->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Vous ne pouvez pas vous payer à vous-même.',
+                ], 400);
+            }
+            $recipientType = 'client';
+            $recipientId = $recipient->id;
+        } elseif ($request->marchand_code) {
+            $recipient = Marchand::where('codeMarchand', $request->marchand_code)->first();
+            if (!$recipient) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Marchand non trouvé.',
+                ], 404);
+            }
+            $recipientType = 'marchand';
+            $recipientId = $recipient->id;
+        }
+
+        // Vérifier si le solde est suffisant avant de procéder au paiement
+        if ($compte->solde < $request->montant) {
             return response()->json([
                 'success' => false,
-                'message' => 'Solde insuffisant.',
+                'message' => 'Montant insuffisant.',
             ], 400);
+        }
+
+        if (!$compte->debiter($request->montant)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du débit du compte.',
+            ], 400);
+        }
+
+        // Credit recipient if it's a client-to-client payment
+        if ($recipientType === 'client') {
+            $recipientClient = Client::find($recipientId);
+            if ($recipientClient && $recipientClient->compte) {
+                $recipientClient->compte->crediter($request->montant);
+            }
         }
 
         // Create transaction
@@ -144,7 +206,9 @@ class ClientController extends Controller
             'date' => now(),
             'statut' => 'completed',
             'reference' => 'PAY-' . strtoupper(uniqid()),
-            'marchand_id' => $marchand->id,
+            'marchand_id' => $recipientType === 'marchand' ? $recipientId : null,
+            'recipient_type' => $recipientType,
+            'recipient_id' => $recipientId,
         ]);
 
         return response()->json([
@@ -156,6 +220,7 @@ class ClientController extends Controller
             ],
         ]);
     }
+
 
     /**
      * @OA\Post(
@@ -244,6 +309,8 @@ class ClientController extends Controller
             'date' => now(),
             'statut' => 'completed',
             'reference' => 'TRF-' . strtoupper(uniqid()),
+            'recipient_type' => 'client',
+            'recipient_id' => $destinataire->id,
         ]);
 
         return response()->json([

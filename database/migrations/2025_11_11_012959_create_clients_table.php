@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('nom');
             $table->string('prenom');
             $table->string('telephone');
-            $table->string('email')->unique();
+            $table->string('email')->nullable()->unique();
             $table->timestamps();
 
             $table->index('user_id');

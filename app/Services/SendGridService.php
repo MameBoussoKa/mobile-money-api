@@ -8,51 +8,30 @@ use Illuminate\Support\Facades\Log;
 class SendGridService
 {
     /**
-     * Send a simple confirmation email via SendGrid API
+     * Send a simple confirmation SMS
+     * Note: SendGrid doesn't have native SMS API, using simulation for now
      *
-     * @param string $toEmail
+     * @param string $toPhone
      * @param string $toName
      * @param string $code
      * @return bool
      */
-    public function sendConfirmation(string $toEmail, string $toName, string $code): bool
+    public function sendConfirmation(string $toPhone, string $toName, string $code): bool
     {
-        $apiKey = config('services.sendgrid.key') ?: env('SENDGRID_API_KEY');
-        if (empty($apiKey)) {
-            return false;
-        }
+        // For now, simulate SMS sending - log the SMS content
+        Log::info('SMS envoyé (simulation)', [
+            'to' => $toPhone,
+            'from' => 'VotreApp',
+            'content' => "Bonjour $toName, Votre code de confirmation est : $code. Merci.",
+            'code' => $code
+        ]);
 
-        $fromEmail = config('mail.from.address') ?: env('MAIL_FROM_ADDRESS');
-        $fromName = config('mail.from.name') ?: env('MAIL_FROM_NAME');
+        // In production, you would integrate with a real SMS service like:
+        // - Twilio: https://www.twilio.com/docs/sms/api
+        // - AWS SNS: https://docs.aws.amazon.com/sns/latest/dg/sms_publish-to-phone.html
+        // - Orange SMS API, etc.
 
-        $payload = [
-            'personalizations' => [
-                [
-                    'to' => [
-                        ['email' => $toEmail, 'name' => $toName],
-                    ],
-                    'subject' => 'Confirmation de votre compte',
-                ],
-            ],
-            'from' => ['email' => $fromEmail, 'name' => $fromName],
-            'content' => [
-                ['type' => 'text/plain', 'value' => "Bonjour $toName,\n\nVotre code de confirmation est : $code\n\nMerci."]
-            ],
-        ];
-
-        $response = Http::withToken($apiKey)
-            ->post('https://api.sendgrid.com/v3/mail/send', $payload);
-
-        if ($response->status() === 202) {
-            return true;
-        } else {
-            // Log the error for debugging
-            Log::error('SendGrid API error', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-                'payload' => $payload
-            ]);
-            return false;
-        }
+        // For testing purposes, always return true
+        return true;
     }
 }

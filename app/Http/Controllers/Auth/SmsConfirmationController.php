@@ -3,45 +3,45 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\ConfirmEmailRequest;
+use App\Http\Requests\ConfirmSmsRequest;
 use App\Models\Client;
 use Illuminate\Http\JsonResponse;
 
 /**
  * @OA\Post(
- *     path="/api/confirm-email",
+ *     path="/api/confirm-sms",
  *     tags={"Auth"},
- *     summary="Confirm email with verification code",
+ *     summary="Confirm SMS with verification code",
  *     @OA\RequestBody(
  *         required=true,
  *         @OA\JsonContent(
- *             required={"email","code"},
- *             @OA\Property(property="email", type="string", format="email", example="john.doe@example.com"),
+ *             required={"telephone","code"},
+ *             @OA\Property(property="telephone", type="string", example="1234567890"),
  *             @OA\Property(property="code", type="string", example="123456")
  *         )
  *     ),
  *     @OA\Response(
  *         response=200,
- *         description="Email confirmé avec succès",
+ *         description="SMS confirmé avec succès",
  *         @OA\JsonContent(
  *             @OA\Property(property="success", type="boolean", example=true),
- *             @OA\Property(property="message", type="string", example="Email confirmé avec succès. Votre compte est maintenant actif.")
+ *             @OA\Property(property="message", type="string", example="SMS confirmé avec succès. Votre compte est maintenant actif.")
  *         )
  *     ),
  *     @OA\Response(response=400, description="Code de confirmation invalide"),
  *     @OA\Response(response=422, description="Validation error")
  * )
  */
-class EmailConfirmationController extends Controller
+class SmsConfirmationController extends Controller
 {
     /**
-     * Confirm email with verification code
+     * Confirm SMS with verification code
      */
-    public function confirm(ConfirmEmailRequest $request): JsonResponse
+    public function confirm(ConfirmSmsRequest $request): JsonResponse
     {
         $data = $request->validated();
 
-        $client = Client::where('email', $data['email'])->first();
+        $client = Client::where('telephone', $data['telephone'])->first();
 
         if (!$client || $client->confirmation_code !== $data['code']) {
             return response()->json([
@@ -50,8 +50,8 @@ class EmailConfirmationController extends Controller
             ], 400);
         }
 
-        // Mark email as verified
-        $client->email_verified_at = now();
+        // Mark SMS as verified
+        $client->email_verified_at = now(); // Reuse this field for SMS verification
         $client->confirmation_code = null; // Clear the code after use
         $client->save();
 
@@ -69,7 +69,7 @@ class EmailConfirmationController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Email confirmé avec succès. Votre compte est maintenant actif.',
+            'message' => 'SMS confirmé avec succès. Votre compte est maintenant actif.',
         ]);
     }
 }

@@ -27,7 +27,6 @@ class RegisterClientRequest extends FormRequest
             'nom' => 'required|string|max:255',
             'prenom' => 'required|string|max:255',
             'telephone' => 'required|string|max:20|unique:clients,telephone',
-            'email' => 'required|email|unique:clients,email',
         ];
     }
 }

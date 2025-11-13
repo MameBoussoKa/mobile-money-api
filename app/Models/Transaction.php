@@ -22,11 +22,17 @@ class Transaction extends Model
         'statut',
         'reference',
         'marchand_id',
+        'recipient_type',
+        'recipient_id',
     ];
 
     protected $casts = [
         'montant' => 'decimal:2',
         'date' => 'datetime',
+    ];
+
+    protected $attributes = [
+        'statut' => 'pending',
     ];
 
     public function compte()
@@ -37,6 +43,16 @@ class Transaction extends Model
     public function marchand()
     {
         return $this->belongsTo(Marchand::class);
+    }
+
+    public function recipientClient()
+    {
+        return $this->belongsTo(Client::class, 'recipient_id');
+    }
+
+    public function recipientMarchand()
+    {
+        return $this->belongsTo(Marchand::class, 'recipient_id');
     }
 
     public function validerTransaction()

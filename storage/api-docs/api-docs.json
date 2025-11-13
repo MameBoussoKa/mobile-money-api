@@ -11,68 +11,6 @@
         }
     ],
     "paths": {
-        "/api/confirm-email": {
-            "post": {
-                "tags": [
-                    "Auth"
-                ],
-                "summary": "Confirm email with verification code",
-                "operationId": "dd442cc7dc917a1d3ed2b72b5fa1cd04",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "required": [
-                                    "email",
-                                    "code"
-                                ],
-                                "properties": {
-                                    "email": {
-                                        "type": "string",
-                                        "format": "email",
-                                        "example": "john.doe@example.com"
-                                    },
-                                    "code": {
-                                        "type": "string",
-                                        "example": "123456"
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Email confirmé avec succès",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Email confirmé avec succès. Votre compte est maintenant actif."
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Code de confirmation invalide"
-                    },
-                    "422": {
-                        "description": "Validation error"
-                    }
-                }
-            }
-        },
         "/api/login": {
             "post": {
                 "tags": [
@@ -86,13 +24,13 @@
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "username",
+                                    "phone_number",
                                     "password"
                                 ],
                                 "properties": {
-                                    "username": {
+                                    "phone_number": {
                                         "type": "string",
-                                        "example": "john_doe"
+                                        "example": "771234567"
                                     },
                                     "password": {
                                         "type": "string",
@@ -121,30 +59,13 @@
                                         },
                                         "data": {
                                             "properties": {
-                                                "user": {
-                                                    "properties": {
-                                                        "id": {
-                                                            "type": "integer",
-                                                            "example": 1
-                                                        },
-                                                        "username": {
-                                                            "type": "string",
-                                                            "example": "john_doe"
-                                                        },
-                                                        "role": {
-                                                            "type": "string",
-                                                            "example": "client"
-                                                        }
-                                                    },
-                                                    "type": "object"
-                                                },
                                                 "token": {
                                                     "type": "string",
                                                     "example": "bearer_token_here"
                                                 },
-                                                "email_confirmed": {
-                                                    "type": "boolean",
-                                                    "example": true
+                                                "refresh_token": {
+                                                    "type": "string",
+                                                    "example": "refresh_token_here"
                                                 }
                                             },
                                             "type": "object"
@@ -164,6 +85,45 @@
                 }
             }
         },
+        "/api/logout": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Logout client",
+                "operationId": "f4efb0179147182a74ba51fa54081de9",
+                "responses": {
+                    "200": {
+                        "description": "Déconnexion réussie",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Déconnexion réussie."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Non autorisé"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/register": {
             "post": {
                 "tags": [
@@ -181,8 +141,7 @@
                                     "password",
                                     "nom",
                                     "prenom",
-                                    "telephone",
-                                    "email"
+                                    "telephone"
                                 ],
                                 "properties": {
                                     "username": {
@@ -204,11 +163,6 @@
                                     "telephone": {
                                         "type": "string",
                                         "example": "1234567890"
-                                    },
-                                    "email": {
-                                        "type": "string",
-                                        "format": "email",
-                                        "example": "john.doe@example.com"
                                     }
                                 },
                                 "type": "object"
@@ -218,7 +172,7 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "Inscription réussie. Un email de confirmation est envoyé.",
+                        "description": "Inscription réussie. Un SMS de confirmation est envoyé.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -229,7 +183,7 @@
                                         },
                                         "message": {
                                             "type": "string",
-                                            "example": "Inscription réussie. Un email de confirmation a été envoyé."
+                                            "example": "Inscription réussie. Un SMS de confirmation a été envoyé."
                                         },
                                         "data": {
                                             "properties": {
@@ -249,6 +203,67 @@
                                 }
                             }
                         }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/confirm-sms": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Confirm SMS with verification code",
+                "operationId": "63d4fd2505724d65b435cb1380e16761",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "telephone",
+                                    "code"
+                                ],
+                                "properties": {
+                                    "telephone": {
+                                        "type": "string",
+                                        "example": "1234567890"
+                                    },
+                                    "code": {
+                                        "type": "string",
+                                        "example": "123456"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "SMS confirmé avec succès",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "SMS confirmé avec succès. Votre compte est maintenant actif."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Code de confirmation invalide"
                     },
                     "422": {
                         "description": "Validation error"
@@ -317,7 +332,7 @@
                 "tags": [
                     "Client"
                 ],
-                "summary": "Make a payment to a merchant",
+                "summary": "Make a payment to a recipient",
                 "operationId": "3b123f4662de382f50b936a180261f55",
                 "requestBody": {
                     "required": true,
@@ -325,13 +340,16 @@
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "marchand_id",
                                     "montant"
                                 ],
                                 "properties": {
-                                    "marchand_id": {
+                                    "recipient_telephone": {
                                         "type": "string",
-                                        "example": "uuid-marchand"
+                                        "example": "1234567890"
+                                    },
+                                    "marchand_code": {
+                                        "type": "string",
+                                        "example": "MARCHAND-123"
                                     },
                                     "montant": {
                                         "type": "number",
@@ -368,7 +386,7 @@
                                                 "nouveau_solde": {
                                                     "type": "number",
                                                     "format": "float",
-                                                    "example": 1000.5
+                                                    "example": 500
                                                 }
                                             },
                                             "type": "object"
@@ -380,16 +398,13 @@
                         }
                     },
                     "400": {
-                        "description": "Solde insuffisant"
+                        "description": "Solde insuffisant ou destinataire invalide"
                     },
                     "401": {
                         "description": "Non autorisé"
                     },
                     "403": {
                         "description": "Email non confirmé"
-                    },
-                    "404": {
-                        "description": "Marchand non trouvé"
                     }
                 },
                 "security": [
@@ -608,6 +623,21 @@
         {
             "name": "Client",
             "description": "Client"
+        }
+    ],
+    "components": {
+        "securitySchemes": {
+            "sanctum": {
+                "type": "apiKey",
+                "description": "Enter token in format (Bearer <token>)",
+                "name": "Authorization",
+                "in": "header"
+            }
+        }
+    },
+    "security": [
+        {
+            "sanctum": []
         }
     ]
 }
