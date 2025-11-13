@@ -3,13 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Client;
+use App\Models\Compte;
 use App\Models\Marchand;
 use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class ClientController extends Controller
+class CompteController extends Controller
 {
     public function __construct()
     {
@@ -18,10 +19,16 @@ class ClientController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/client/balance",
-     *     tags={"Client"},
+     *     path="/api/compte/{id}/solde",
+     *     tags={"Compte"},
      *     summary="Get client account balance",
      *     security={{"sanctum":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Solde récupéré avec succès",
@@ -35,10 +42,11 @@ class ClientController extends Controller
      *         )
      *     ),
      *     @OA\Response(response=401, description="Non autorisé"),
-     *     @OA\Response(response=403, description="Email non confirmé")
+     *     @OA\Response(response=403, description="Email non confirmé"),
+     *     @OA\Response(response=404, description="Compte non trouvé")
      * )
      */
-    public function getBalance(): JsonResponse
+    public function getSolde($id): JsonResponse
     {
         $user = Auth::user();
         $client = $user->client;
@@ -50,13 +58,21 @@ class ClientController extends Controller
             ], 403);
         }
 
-        $compte = $client->compte;
+        $compte = Compte::find($id);
 
         if (!$compte) {
             return response()->json([
                 'success' => false,
-                'message' => 'Aucun compte trouvé.',
+                'message' => 'Compte non trouvé.',
             ], 404);
+        }
+
+        // Check if the compte belongs to the authenticated client
+        if ($compte->client_id !== $client->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Accès non autorisé à ce compte.',
+            ], 403);
         }
 
         return response()->json([
@@ -71,10 +87,16 @@ class ClientController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/api/client/pay",
-     *     tags={"Client"},
+     *     path="/api/compte/{id}/pay",
+     *     tags={"Compte"},
      *     summary="Make a payment to a recipient",
      *     security={{"sanctum":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -98,10 +120,11 @@ class ClientController extends Controller
      *     ),
      *     @OA\Response(response=400, description="Solde insuffisant ou destinataire invalide"),
      *     @OA\Response(response=401, description="Non autorisé"),
-     *     @OA\Response(response=403, description="Email non confirmé")
+     *     @OA\Response(response=403, description="Email non confirmé"),
+     *     @OA\Response(response=404, description="Compte non trouvé")
      * )
      */
-    public function pay(Request $request): JsonResponse
+    public function pay($id, Request $request): JsonResponse
     {
         $request->validate([
             'montant' => 'required|numeric|min:0.01',
@@ -134,13 +157,21 @@ class ClientController extends Controller
             ], 403);
         }
 
-        $compte = $client->compte;
+        $compte = Compte::find($id);
 
         if (!$compte) {
             return response()->json([
                 'success' => false,
-                'message' => 'Aucun compte trouvé.',
+                'message' => 'Compte non trouvé.',
             ], 404);
+        }
+
+        // Check if the compte belongs to the authenticated client
+        if ($compte->client_id !== $client->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Accès non autorisé à ce compte.',
+            ], 403);
         }
 
         $recipientType = null;
@@ -224,10 +255,16 @@ class ClientController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/api/client/transfer",
-     *     tags={"Client"},
+     *     path="/api/compte/{id}/transfer",
+     *     tags={"Compte"},
      *     summary="Transfer money to another client",
      *     security={{"sanctum":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -250,10 +287,11 @@ class ClientController extends Controller
      *     ),
      *     @OA\Response(response=400, description="Solde insuffisant ou destinataire invalide"),
      *     @OA\Response(response=401, description="Non autorisé"),
-     *     @OA\Response(response=403, description="Email non confirmé")
+     *     @OA\Response(response=403, description="Email non confirmé"),
+     *     @OA\Response(response=404, description="Compte non trouvé")
      * )
      */
-    public function transfer(Request $request): JsonResponse
+    public function transfer($id, Request $request): JsonResponse
     {
         $request->validate([
             'destinataire_telephone' => 'required|string|exists:clients,telephone',
@@ -270,7 +308,23 @@ class ClientController extends Controller
             ], 403);
         }
 
-        $compte = $client->compte;
+        $compte = Compte::find($id);
+
+        if (!$compte) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Compte non trouvé.',
+            ], 404);
+        }
+
+        // Check if the compte belongs to the authenticated client
+        if ($compte->client_id !== $client->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Accès non autorisé à ce compte.',
+            ], 403);
+        }
+
         $destinataire = Client::where('telephone', $request->destinataire_telephone)->first();
 
         if (!$destinataire || !$destinataire->email_verified_at) {
@@ -325,10 +379,16 @@ class ClientController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/client/transactions",
-     *     tags={"Client"},
+     *     path="/api/compte/{id}/transactions",
+     *     tags={"Compte"},
      *     summary="Get client transaction history",
      *     security={{"sanctum":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
      *     @OA\Parameter(
      *         name="page",
      *         in="query",
@@ -369,10 +429,11 @@ class ClientController extends Controller
      *         )
      *     ),
      *     @OA\Response(response=401, description="Non autorisé"),
-     *     @OA\Response(response=403, description="Email non confirmé")
+     *     @OA\Response(response=403, description="Email non confirmé"),
+     *     @OA\Response(response=404, description="Compte non trouvé")
      * )
      */
-    public function getTransactions(Request $request): JsonResponse
+    public function getTransactions($id, Request $request): JsonResponse
     {
         $user = Auth::user();
         $client = $user->client;
@@ -384,13 +445,21 @@ class ClientController extends Controller
             ], 403);
         }
 
-        $compte = $client->compte;
+        $compte = Compte::find($id);
 
         if (!$compte) {
             return response()->json([
                 'success' => false,
-                'message' => 'Aucun compte trouvé.',
+                'message' => 'Compte non trouvé.',
             ], 404);
+        }
+
+        // Check if the compte belongs to the authenticated client
+        if ($compte->client_id !== $client->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Accès non autorisé à ce compte.',
+            ], 403);
         }
 
         $perPage = $request->get('per_page', 10);

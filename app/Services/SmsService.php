@@ -16,27 +16,12 @@ class SmsService
      */
     public function sendConfirmationCode(string $phoneNumber, string $name, string $code): bool
     {
-        // Simulation pour les tests - en production, remplacez par un vrai service SMS
-        Log::info('SMS de confirmation envoyé (simulation)', [
-            'destinataire' => $phoneNumber,
-            'nom' => $name,
-            'code' => $code,
-            'message' => "Bonjour $name, Votre code de confirmation est : $code. Merci."
-        ]);
-
-        // Pour un vrai service SMS, vous pouvez utiliser :
-        // - Twilio: https://www.twilio.com/docs/sms/api
-        // - AWS SNS: https://docs.aws.amazon.com/sns/latest/dg/sms_publish-to-phone.html
-        // - OVH SMS: https://docs.ovh.com/fr/sms/
-        // - Orange SMS API, etc.
-
-        return true;
+        return $this->sendWithTwilio($phoneNumber, $name, $code);
     }
 
     /**
-     * Example implementation with Twilio (uncomment and configure if needed)
+     * Send SMS using Twilio
      */
-    /*
     private function sendWithTwilio(string $phoneNumber, string $name, string $code): bool
     {
         $sid = config('services.twilio.sid');
@@ -57,11 +42,15 @@ class SmsService
                     'body' => "Bonjour $name, Votre code de confirmation est : $code. Merci."
                 ]
             );
+            Log::info('SMS envoyé avec succès via Twilio', [
+                'destinataire' => $phoneNumber,
+                'nom' => $name,
+                'code' => $code
+            ]);
             return true;
         } catch (\Exception $e) {
             Log::error('Erreur Twilio SMS', ['error' => $e->getMessage()]);
             return false;
         }
     }
-    */
 }

@@ -22,7 +22,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\SmsConfirmationController;
 use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\ClientController;
+use App\Http\Controllers\CompteController;
 use Illuminate\Support\Facades\Route as RouteFacade;
 
 RouteFacade::post('/register', [RegisterController::class, 'register']);
@@ -32,9 +32,9 @@ RouteFacade::post('/confirm-sms', [SmsConfirmationController::class, 'confirm'])
 // Protected client routes
 RouteFacade::middleware('auth:sanctum')->group(function () {
     RouteFacade::post('/logout', [LoginController::class, 'logout']);
-    RouteFacade::get('/client/balance', [ClientController::class, 'getBalance']);
-    RouteFacade::post('/client/pay', [ClientController::class, 'pay']);
-    RouteFacade::post('/client/transfer', [ClientController::class, 'transfer']);
-    RouteFacade::get('/client/transactions', [ClientController::class, 'getTransactions']);
+    RouteFacade::get('/compte/{id}/solde', [CompteController::class, 'getSolde']);
+    RouteFacade::post('/compte/{id}/pay', [CompteController::class, 'pay']);
+    RouteFacade::post('/compte/{id}/transfer', [CompteController::class, 'transfer']);
+    RouteFacade::get('/compte/{id}/transactions', [CompteController::class, 'getTransactions']);
 });
 

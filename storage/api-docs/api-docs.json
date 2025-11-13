@@ -271,13 +271,23 @@
                 }
             }
         },
-        "/api/client/balance": {
+        "/api/compte/{id}/solde": {
             "get": {
                 "tags": [
-                    "Client"
+                    "Compte"
                 ],
                 "summary": "Get client account balance",
-                "operationId": "8da80ac9c243feb963b9d6b152174527",
+                "operationId": "60d128de95f3b4903fa8275b2004b3d2",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Solde récupéré avec succès",
@@ -318,6 +328,9 @@
                     },
                     "403": {
                         "description": "Email non confirmé"
+                    },
+                    "404": {
+                        "description": "Compte non trouvé"
                     }
                 },
                 "security": [
@@ -327,13 +340,23 @@
                 ]
             }
         },
-        "/api/client/pay": {
+        "/api/compte/{id}/pay": {
             "post": {
                 "tags": [
-                    "Client"
+                    "Compte"
                 ],
                 "summary": "Make a payment to a recipient",
-                "operationId": "3b123f4662de382f50b936a180261f55",
+                "operationId": "5a3a18872b7b7bfd0d5fd34adea198b7",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -405,6 +428,9 @@
                     },
                     "403": {
                         "description": "Email non confirmé"
+                    },
+                    "404": {
+                        "description": "Compte non trouvé"
                     }
                 },
                 "security": [
@@ -414,13 +440,23 @@
                 ]
             }
         },
-        "/api/client/transfer": {
+        "/api/compte/{id}/transfer": {
             "post": {
                 "tags": [
-                    "Client"
+                    "Compte"
                 ],
                 "summary": "Transfer money to another client",
-                "operationId": "7b39d95f28214da5d5b9e49303142887",
+                "operationId": "b155a01a4ca83bb5669b59234f5c7936",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -489,6 +525,9 @@
                     },
                     "403": {
                         "description": "Email non confirmé"
+                    },
+                    "404": {
+                        "description": "Compte non trouvé"
                     }
                 },
                 "security": [
@@ -498,14 +537,22 @@
                 ]
             }
         },
-        "/api/client/transactions": {
+        "/api/compte/{id}/transactions": {
             "get": {
                 "tags": [
-                    "Client"
+                    "Compte"
                 ],
                 "summary": "Get client transaction history",
-                "operationId": "dd27968d080eb45491eaf980cc2c5a44",
+                "operationId": "d183c8b69992008fea6409b597f69385",
                 "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
                     {
                         "name": "page",
                         "in": "query",
@@ -605,6 +652,9 @@
                     },
                     "403": {
                         "description": "Email non confirmé"
+                    },
+                    "404": {
+                        "description": "Compte non trouvé"
                     }
                 },
                 "security": [
@@ -621,8 +671,8 @@
             "description": "Auth"
         },
         {
-            "name": "Client",
-            "description": "Client"
+            "name": "Compte",
+            "description": "Compte"
         }
     ],
     "components": {
