@@ -12,6 +12,14 @@ class MarchandSeeder extends Seeder
      */
     public function run(): void
     {
-        \App\Models\Marchand::factory(5)->create();
+        \App\Models\Marchand::factory()->create([
+            'codeMarchand' => 'MARCHAND-123',
+            'nom' => 'Test Marchand',
+            'categorie' => 'Services',
+            'telephone' => '771234567',
+            'adresse' => 'Test Address',
+        ]);
+
+        \App\Models\Marchand::factory(4)->create();
     }
 }

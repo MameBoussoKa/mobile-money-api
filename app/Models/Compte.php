@@ -36,4 +36,15 @@ class Compte extends Model
         return $this->hasMany(Transaction::class);
     }
 
+    public function getSoldeAttribute()
+    {
+        $incomingTypes = ['incoming_payment', 'incoming_transfer', 'deposit'];
+        $outgoingTypes = ['payment', 'transfer'];
+
+        $incoming = $this->transactions()->whereIn('type', $incomingTypes)->sum('montant');
+        $outgoing = $this->transactions()->whereIn('type', $outgoingTypes)->sum('montant');
+
+        return $incoming - $outgoing;
+    }
+
 }

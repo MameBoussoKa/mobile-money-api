@@ -73,7 +73,7 @@ class CompteController extends Controller
             ], 403);
         }
 
-        $compte = Compte::find($id);
+        $compte = Compte::where('numeroCompte', $id)->first();
 
         if (!$compte) {
             return response()->json([
@@ -93,7 +93,7 @@ class CompteController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'solde' => $compte->solde,
+                'solde' => $compte->solde ?? 0,
                 'devise' => $compte->devise,
                 'numeroCompte' => $compte->numeroCompte,
             ],
@@ -187,7 +187,7 @@ class CompteController extends Controller
             ], 403);
         }
 
-        $compte = Compte::find($id);
+        $compte = Compte::where('numeroCompte', $id)->first();
 
         if (!$compte) {
             return response()->json([
@@ -244,9 +244,7 @@ class CompteController extends Controller
         }
 
 
-        // Deduct from sender's balance
-        $compte->solde -= $request->montant;
-        $compte->save();
+        // Transaction will be created below, balance is computed from transactions
 
         // Create transaction
         $transaction = Transaction::create([
@@ -262,12 +260,10 @@ class CompteController extends Controller
             'recipient_id' => $recipientId,
         ]);
 
-        // Create incoming transaction for recipient if it's a client and add to their balance
+        // Create incoming transaction for recipient if it's a client
         if ($recipientType === 'client') {
             $recipientCompte = Client::find($recipientId)->compte;
             if ($recipientCompte) {
-                $recipientCompte->solde += $request->montant;
-                $recipientCompte->save();
                 Transaction::create([
                     'compte_id' => $recipientCompte->id,
                     'type' => 'incoming_payment',
@@ -363,7 +359,7 @@ class CompteController extends Controller
         //     ], 403);
         // }
 
-        $compte = Compte::find($id);
+        $compte = Compte::where('numeroCompte', $id)->first();
 
         if (!$compte) {
             return response()->json([
@@ -405,11 +401,7 @@ class CompteController extends Controller
 
         $compteDestinataire = $destinataire->compte;
 
-        // Deduct from sender's balance and add to recipient's balance
-        $compte->solde -= $request->montant;
-        $compte->save();
-        $compteDestinataire->solde += $request->montant;
-        $compteDestinataire->save();
+        // Transactions will be created below, balance is computed from transactions
 
         // Create transaction
         $transaction = Transaction::create([
@@ -472,6 +464,7 @@ class CompteController extends Controller
      *                     @OA\Property(property="date_inscription", type="string", format="date-time")
      *                 ),
      *                 @OA\Property(property="compte", type="object",
+     *                     @OA\Property(property="id", type="string", example="CMPT-123456"),
      *                     @OA\Property(property="numero_compte", type="string", example="CMPT-123456"),
      *                     @OA\Property(property="solde", type="number", format="float", example=150000),
      *                     @OA\Property(property="devise", type="string", example="XOF")
@@ -545,8 +538,9 @@ class CompteController extends Controller
                     'date_inscription' => $client->created_at,
                 ],
                 'compte' => $compte ? [
+                    'id' => $compte->numeroCompte,
                     'numero_compte' => $compte->numeroCompte,
-                    'solde' => $compte->solde,
+                    'solde' => $compte->solde ?? 0,
                     'devise' => $compte->devise,
                 ] : null,
                 'transactions' => $transactions,
@@ -637,7 +631,7 @@ class CompteController extends Controller
             ], 403);
         }
 
-        $compte = Compte::find($id);
+        $compte = Compte::where('numeroCompte', $id)->first();
 
         if (!$compte) {
             return response()->json([
