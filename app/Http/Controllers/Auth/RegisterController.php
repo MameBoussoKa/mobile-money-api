@@ -23,11 +23,11 @@ use Illuminate\Http\JsonResponse;
  *         required=true,
  *         @OA\JsonContent(
  *             required={"username","password","nom","prenom","telephone"},
- *             @OA\Property(property="username", type="string", example="john_doe"),
+ *             @OA\Property(property="username", type="string", example="test"),
  *             @OA\Property(property="password", type="string", example="password123"),
- *             @OA\Property(property="nom", type="string", example="Doe"),
- *             @OA\Property(property="prenom", type="string", example="John"),
- *             @OA\Property(property="telephone", type="string", example="1234567890")
+ *             @OA\Property(property="nom", type="string", example="Ka"),
+ *             @OA\Property(property="prenom", type="string", example="Bousso"),
+ *             @OA\Property(property="telephone", type="string", example="785942490")
  *         )
  *     ),
  *     @OA\Response(
@@ -37,8 +37,8 @@ use Illuminate\Http\JsonResponse;
  *             @OA\Property(property="success", type="boolean", example=true),
  *             @OA\Property(property="message", type="string", example="Inscription réussie. Un SMS de confirmation a été envoyé."),
  *             @OA\Property(property="data", type="object",
- *                 @OA\Property(property="user_id", type="integer", example=1),
- *                 @OA\Property(property="client_id", type="integer", example=1)
+ *                 @OA\Property(property="user_id", type="string", example="uuid-string"),
+ *                 @OA\Property(property="client_id", type="string", example="uuid-string")
  *             )
  *         )
  *     ),
@@ -80,6 +80,14 @@ class RegisterController extends Controller
             'prenom' => $data['prenom'],
             'telephone' => $data['telephone'],
             'confirmation_code' => $code,
+            'email_verified_at' => now(), // For testing, set as verified
+        ]);
+
+        // create compte for the client
+        $compte = $client->compte()->create([
+            'numeroCompte' => 'CMPT-' . strtoupper(uniqid()),
+            'devise' => 'XOF',
+            'dateDerniereMaj' => now(),
         ]);
 
         // send confirmation SMS

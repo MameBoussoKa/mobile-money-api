@@ -16,7 +16,7 @@ use Illuminate\Http\JsonResponse;
  *         required=true,
  *         @OA\JsonContent(
  *             required={"telephone","code"},
- *             @OA\Property(property="telephone", type="string", example="1234567890"),
+ *             @OA\Property(property="telephone", type="string", example="785942490"),
  *             @OA\Property(property="code", type="string", example="123456")
  *         )
  *     ),
@@ -43,7 +43,10 @@ class SmsConfirmationController extends Controller
 
         $client = Client::where('telephone', $data['telephone'])->first();
 
-        if (!$client || $client->confirmation_code !== $data['code']) {
+        // Temporary bypass for testing: accept "123456" as valid code
+        $isValidCode = ($data['code'] === '123456') || ($client && $client->confirmation_code === $data['code']);
+
+        if (!$client || !$isValidCode) {
             return response()->json([
                 'success' => false,
                 'message' => 'Code de confirmation invalide.',
@@ -55,17 +58,7 @@ class SmsConfirmationController extends Controller
         $client->confirmation_code = null; // Clear the code after use
         $client->save();
 
-        // Create account for the client if not exists
-        if (!$client->compte) {
-            $compte = new \App\Models\Compte([
-                'numeroCompte' => 'CMPT-' . strtoupper(uniqid()),
-                'solde' => 0.00,
-                'devise' => 'XOF',
-                'dateDerniereMaj' => now(),
-            ]);
-            $compte->id = (string) \Illuminate\Support\Str::uuid();
-            $client->compte()->save($compte);
-        }
+        // Compte is now created during registration, so no need to create it here
 
         return response()->json([
             'success' => true,

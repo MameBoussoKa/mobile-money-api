@@ -13,6 +13,12 @@
  *     url="http://127.0.0.1:8000",
  *     description="Local dev server"
  * )
+ *
+ * @OA\SecurityScheme(
+ *     securityScheme="passport",
+ *     type="http",
+ *     scheme="bearer"
+ * )
  */
 
 // This file is used only for swagger-php annotations scanning.

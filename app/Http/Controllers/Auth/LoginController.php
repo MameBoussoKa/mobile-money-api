@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Hash;
  *         required=true,
  *         @OA\JsonContent(
  *             required={"phone_number","password"},
- *             @OA\Property(property="phone_number", type="string", example="771234567"),
+ *             @OA\Property(property="phone_number", type="string", example="785942490"),
  *             @OA\Property(property="password", type="string", example="password123")
  *         )
  *     ),
@@ -41,7 +41,7 @@ use Illuminate\Support\Facades\Hash;
  *     path="/api/logout",
  *     tags={"Auth"},
  *     summary="Logout client",
- *     security={{"sanctum": {}}},
+ *     security={{"passport": {}}},
  *     @OA\Response(
  *         response=200,
  *         description="Déconnexion réussie",
@@ -67,23 +67,35 @@ class LoginController extends Controller
 
         $client = Client::where('telephone', $request->phone_number)->first();
 
-        if (!$client || !$client->user || !Hash::check($request->password, $client->user->password)) {
+        if (!$client || !$client->user) {
             return response()->json([
                 'success' => false,
-                'message' => 'Identifiants invalides.',
+                'message' => 'Client not found.',
             ], 401);
         }
 
-        $user = $client->user;
+        if (!Hash::check($request->password, $client->user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid password.',
+            ], 401);
+        }
 
-        $token = $user->createToken('API Token')->plainTextToken;
+        if (!$client->email_verified_at) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Votre email n\'est pas confirmé.',
+            ], 403);
+        }
+
+        // Create proper token
+        $token = $client->user->createToken('API Token')->accessToken;
 
         return response()->json([
             'success' => true,
             'message' => 'Connexion réussie.',
             'data' => [
                 'token' => $token,
-                'refresh_token' => $token,
             ],
         ]);
     }
@@ -93,7 +105,9 @@ class LoginController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
-        $request->user()->currentAccessToken()->delete();
+        if ($request->user() && $request->user()->token()) {
+            $request->user()->token()->revoke();
+        }
 
         return response()->json([
             'success' => true,

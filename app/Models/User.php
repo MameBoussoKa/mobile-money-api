@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
+use Laravel\Passport\HasApiTokens;
 
 class User extends Authenticatable
 {
@@ -67,4 +67,16 @@ class User extends Authenticatable
     {
         // Logic for logout
     }
+
+    public function findForPassport($telephone)
+    {
+        $client = Client::where('telephone', $telephone)->first();
+        return $client ? $client->user : null;
+    }
+
+    public function getAuthIdentifierName()
+    {
+        return 'id';
+    }
+
 }

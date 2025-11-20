@@ -24,7 +24,6 @@ class CompteRequest extends FormRequest
         return [
             'client_id' => 'required|uuid|exists:clients,id',
             'numeroCompte' => 'required|string|unique:comptes,numeroCompte,' . $this->route('compte'),
-            'solde' => 'numeric|min:0',
             'devise' => 'string|size:3',
             'dateDerniereMaj' => 'nullable|date',
         ];

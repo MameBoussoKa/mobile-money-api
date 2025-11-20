@@ -5,11 +5,6 @@
         "description": "Documentation de l'API Mobile Money",
         "version": "1.0.0"
     },
-    "servers": [
-        {
-            "url": "http://127.0.0.1:8000"
-        }
-    ],
     "paths": {
         "/api/login": {
             "post": {
@@ -30,7 +25,7 @@
                                 "properties": {
                                     "phone_number": {
                                         "type": "string",
-                                        "example": "771234567"
+                                        "example": "785942490"
                                     },
                                     "password": {
                                         "type": "string",
@@ -119,7 +114,7 @@
                 },
                 "security": [
                     {
-                        "sanctum": []
+                        "passport": []
                     }
                 ]
             }
@@ -146,7 +141,7 @@
                                 "properties": {
                                     "username": {
                                         "type": "string",
-                                        "example": "john_doe"
+                                        "example": "test"
                                     },
                                     "password": {
                                         "type": "string",
@@ -154,15 +149,15 @@
                                     },
                                     "nom": {
                                         "type": "string",
-                                        "example": "Doe"
+                                        "example": "Ka"
                                     },
                                     "prenom": {
                                         "type": "string",
-                                        "example": "John"
+                                        "example": "Bousso"
                                     },
                                     "telephone": {
                                         "type": "string",
-                                        "example": "1234567890"
+                                        "example": "785942490"
                                     }
                                 },
                                 "type": "object"
@@ -188,12 +183,12 @@
                                         "data": {
                                             "properties": {
                                                 "user_id": {
-                                                    "type": "integer",
-                                                    "example": 1
+                                                    "type": "string",
+                                                    "example": "uuid-string"
                                                 },
                                                 "client_id": {
-                                                    "type": "integer",
-                                                    "example": 1
+                                                    "type": "string",
+                                                    "example": "uuid-string"
                                                 }
                                             },
                                             "type": "object"
@@ -229,7 +224,7 @@
                                 "properties": {
                                     "telephone": {
                                         "type": "string",
-                                        "example": "1234567890"
+                                        "example": "785942490"
                                     },
                                     "code": {
                                         "type": "string",
@@ -284,7 +279,7 @@
                         "in": "path",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "string"
                         }
                     }
                 ],
@@ -304,7 +299,7 @@
                                                 "solde": {
                                                     "type": "number",
                                                     "format": "float",
-                                                    "example": 1500.5
+                                                    "example": 150000
                                                 },
                                                 "devise": {
                                                     "type": "string",
@@ -335,7 +330,7 @@
                 },
                 "security": [
                     {
-                        "sanctum": []
+                        "passport": []
                     }
                 ]
             }
@@ -353,7 +348,7 @@
                         "in": "path",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "string"
                         }
                     }
                 ],
@@ -368,7 +363,7 @@
                                 "properties": {
                                     "recipient_telephone": {
                                         "type": "string",
-                                        "example": "1234567890"
+                                        "example": "775942400"
                                     },
                                     "marchand_code": {
                                         "type": "string",
@@ -435,7 +430,7 @@
                 },
                 "security": [
                     {
-                        "sanctum": []
+                        "passport": []
                     }
                 ]
             }
@@ -453,7 +448,7 @@
                         "in": "path",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "string"
                         }
                     }
                 ],
@@ -469,7 +464,7 @@
                                 "properties": {
                                     "destinataire_telephone": {
                                         "type": "string",
-                                        "example": "1234567890"
+                                        "example": "7734567890"
                                     },
                                     "montant": {
                                         "type": "number",
@@ -532,7 +527,150 @@
                 },
                 "security": [
                     {
-                        "sanctum": []
+                        "passport": []
+                    }
+                ]
+            }
+        },
+        "/api/me": {
+            "get": {
+                "tags": [
+                    "Client"
+                ],
+                "summary": "Get authenticated client information, account, and transactions",
+                "operationId": "8fd0a3af1143bff2b011eb19eeeb652e",
+                "responses": {
+                    "200": {
+                        "description": "Informations client récupérées avec succès",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "user": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string",
+                                                            "example": "uuid"
+                                                        },
+                                                        "nom": {
+                                                            "type": "string",
+                                                            "example": "Doe"
+                                                        },
+                                                        "prenom": {
+                                                            "type": "string",
+                                                            "example": "John"
+                                                        },
+                                                        "telephone": {
+                                                            "type": "string",
+                                                            "example": "1234567890"
+                                                        },
+                                                        "email": {
+                                                            "type": "string",
+                                                            "example": "john@example.com"
+                                                        },
+                                                        "type": {
+                                                            "type": "string",
+                                                            "example": "client"
+                                                        },
+                                                        "statut": {
+                                                            "type": "string",
+                                                            "example": "active"
+                                                        },
+                                                        "is_verified": {
+                                                            "type": "boolean",
+                                                            "example": true
+                                                        },
+                                                        "date_creation": {
+                                                            "type": "string",
+                                                            "format": "date-time"
+                                                        },
+                                                        "date_inscription": {
+                                                            "type": "string",
+                                                            "format": "date-time"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "compte": {
+                                                    "properties": {
+                                                        "numero_compte": {
+                                                            "type": "string",
+                                                            "example": "CMPT-123456"
+                                                        },
+                                                        "solde": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 150000
+                                                        },
+                                                        "devise": {
+                                                            "type": "string",
+                                                            "example": "XOF"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "transactions": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "string",
+                                                                "example": "uuid"
+                                                            },
+                                                            "type": {
+                                                                "type": "string",
+                                                                "example": "payment"
+                                                            },
+                                                            "montant": {
+                                                                "type": "number",
+                                                                "format": "float",
+                                                                "example": 500
+                                                            },
+                                                            "devise": {
+                                                                "type": "string",
+                                                                "example": "XOF"
+                                                            },
+                                                            "date": {
+                                                                "type": "string",
+                                                                "format": "date-time"
+                                                            },
+                                                            "statut": {
+                                                                "type": "string",
+                                                                "example": "completed"
+                                                            },
+                                                            "reference": {
+                                                                "type": "string",
+                                                                "example": "PAY-123456"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Non autorisé"
+                    },
+                    "403": {
+                        "description": "Email non confirmé"
+                    }
+                },
+                "security": [
+                    {
+                        "passport": []
                     }
                 ]
             }
@@ -550,7 +688,7 @@
                         "in": "path",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "string"
                         }
                     },
                     {
@@ -659,7 +797,7 @@
                 },
                 "security": [
                     {
-                        "sanctum": []
+                        "passport": []
                     }
                 ]
             }
@@ -673,21 +811,25 @@
         {
             "name": "Compte",
             "description": "Compte"
+        },
+        {
+            "name": "Client",
+            "description": "Client"
         }
     ],
     "components": {
         "securitySchemes": {
-            "sanctum": {
-                "type": "apiKey",
-                "description": "Enter token in format (Bearer <token>)",
-                "name": "Authorization",
-                "in": "header"
+            "passport": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+                "description": "Enter JWT Bearer token"
             }
         }
     },
     "security": [
         {
-            "sanctum": []
+            "passport": []
         }
     ]
 }

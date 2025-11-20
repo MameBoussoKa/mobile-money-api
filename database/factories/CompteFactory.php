@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Compte;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -20,9 +21,23 @@ class CompteFactory extends Factory
             'id' => (string) \Illuminate\Support\Str::uuid(),
             'client_id' => \App\Models\Client::factory(),
             'numeroCompte' => fake()->unique()->numerify('##########'),
-            'solde' => fake()->randomFloat(2, 0, 10000),
             'devise' => 'XOF',
             'dateDerniereMaj' => now(),
         ];
+    }
+
+    public function withSolde($amount = 0)
+    {
+        return $this->afterCreating(function (Compte $compte) use ($amount) {
+            if ($amount > 0) {
+                // Create an initial transaction to set the balance
+                \App\Models\Transaction::factory()->create([
+                    'compte_id' => $compte->id,
+                    'type' => 'deposit',
+                    'montant' => $amount,
+                    'statut' => 'completed',
+                ]);
+            }
+        });
     }
 }

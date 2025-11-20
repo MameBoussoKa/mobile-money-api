@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
 class Compte extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuids;
 
     protected $keyType = 'string';
     public $incrementing = false;
@@ -21,9 +22,9 @@ class Compte extends Model
     ];
 
     protected $casts = [
-        'solde' => 'decimal:2',
         'dateDerniereMaj' => 'datetime',
     ];
+
 
     public function client()
     {
@@ -35,26 +36,4 @@ class Compte extends Model
         return $this->hasMany(Transaction::class);
     }
 
-    public function crediter($montant)
-    {
-        $this->solde += $montant;
-        $this->dateDerniereMaj = now();
-        $this->save();
-    }
-
-    public function debiter($montant)
-    {
-        if ($this->solde >= $montant) {
-            $this->solde -= $montant;
-            $this->dateDerniereMaj = now();
-            $this->save();
-            return true;
-        }
-        return false;
-    }
-
-    public function afficherSolde()
-    {
-        return $this->solde;
-    }
 }

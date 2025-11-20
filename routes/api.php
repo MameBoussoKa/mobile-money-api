@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Laravel\Passport\Passport;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,7 +15,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
 
@@ -30,7 +31,8 @@ RouteFacade::post('/login', [LoginController::class, 'login']);
 RouteFacade::post('/confirm-sms', [SmsConfirmationController::class, 'confirm']);
 
 // Protected client routes
-RouteFacade::middleware('auth:sanctum')->group(function () {
+RouteFacade::middleware('auth:api')->group(function () {
+    RouteFacade::get('/me', [CompteController::class, 'me']);
     RouteFacade::post('/logout', [LoginController::class, 'logout']);
     RouteFacade::get('/compte/{id}/solde', [CompteController::class, 'getSolde']);
     RouteFacade::post('/compte/{id}/pay', [CompteController::class, 'pay']);

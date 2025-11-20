@@ -14,7 +14,7 @@ class CompteController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth:sanctum');
+        $this->middleware('auth:api');
     }
 
     /**
@@ -22,12 +22,12 @@ class CompteController extends Controller
      *     path="/api/compte/{id}/solde",
      *     tags={"Compte"},
      *     summary="Get client account balance",
-     *     security={{"sanctum":{}}},
+     *     security={{"passport":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
-     *         @OA\Schema(type="integer")
+     *         @OA\Schema(type="string")
      *     ),
      *     @OA\Response(
      *         response=200,
@@ -35,7 +35,7 @@ class CompteController extends Controller
      *         @OA\JsonContent(
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(property="data", type="object",
-     *                 @OA\Property(property="solde", type="number", format="float", example=1500.50),
+     *                 @OA\Property(property="solde", type="number", format="float", example=150000),
      *                 @OA\Property(property="devise", type="string", example="XOF"),
      *                 @OA\Property(property="numeroCompte", type="string", example="CMPT-123456")
      *             )
@@ -49,9 +49,24 @@ class CompteController extends Controller
     public function getSolde($id): JsonResponse
     {
         $user = Auth::user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utilisateur non authentifié.',
+            ], 401);
+        }
+
         $client = $user->client;
 
-        if (!$client || !$client->email_verified_at) {
+        if (!$client) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Client non trouvé.',
+            ], 404);
+        }
+
+        if (!$client->email_verified_at) {
             return response()->json([
                 'success' => false,
                 'message' => 'Votre email n\'est pas confirmé.',
@@ -90,18 +105,18 @@ class CompteController extends Controller
      *     path="/api/compte/{id}/pay",
      *     tags={"Compte"},
      *     summary="Make a payment to a recipient",
-     *     security={{"sanctum":{}}},
+     *     security={{"passport":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
-     *         @OA\Schema(type="integer")
+     *         @OA\Schema(type="string")
      *     ),
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
      *             required={"montant"},
-     *             @OA\Property(property="recipient_telephone", type="string", example="1234567890"),
+     *             @OA\Property(property="recipient_telephone", type="string", example="775942400"),
      *             @OA\Property(property="marchand_code", type="string", example="MARCHAND-123"),
      *             @OA\Property(property="montant", type="number", format="float", example=500.00)
      *         )
@@ -148,9 +163,24 @@ class CompteController extends Controller
         }
 
         $user = Auth::user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utilisateur non authentifié.',
+            ], 401);
+        }
+
         $client = $user->client;
 
-        if (!$client || !$client->email_verified_at) {
+        if (!$client) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Client non trouvé.',
+            ], 404);
+        }
+
+        if (!$client->email_verified_at) {
             return response()->json([
                 'success' => false,
                 'message' => 'Votre email n\'est pas confirmé.',
@@ -213,20 +243,10 @@ class CompteController extends Controller
             ], 400);
         }
 
-        if (!$compte->debiter($request->montant)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erreur lors du débit du compte.',
-            ], 400);
-        }
 
-        // Credit recipient if it's a client-to-client payment
-        if ($recipientType === 'client') {
-            $recipientClient = Client::find($recipientId);
-            if ($recipientClient && $recipientClient->compte) {
-                $recipientClient->compte->crediter($request->montant);
-            }
-        }
+        // Deduct from sender's balance
+        $compte->solde -= $request->montant;
+        $compte->save();
 
         // Create transaction
         $transaction = Transaction::create([
@@ -241,6 +261,26 @@ class CompteController extends Controller
             'recipient_type' => $recipientType,
             'recipient_id' => $recipientId,
         ]);
+
+        // Create incoming transaction for recipient if it's a client and add to their balance
+        if ($recipientType === 'client') {
+            $recipientCompte = Client::find($recipientId)->compte;
+            if ($recipientCompte) {
+                $recipientCompte->solde += $request->montant;
+                $recipientCompte->save();
+                Transaction::create([
+                    'compte_id' => $recipientCompte->id,
+                    'type' => 'incoming_payment',
+                    'montant' => $request->montant,
+                    'devise' => $recipientCompte->devise,
+                    'date' => now(),
+                    'statut' => 'completed',
+                    'reference' => 'PAY-IN-' . strtoupper(uniqid()),
+                    'recipient_type' => 'self',
+                    'recipient_id' => $recipientId,
+                ]);
+            }
+        }
 
         return response()->json([
             'success' => true,
@@ -258,18 +298,18 @@ class CompteController extends Controller
      *     path="/api/compte/{id}/transfer",
      *     tags={"Compte"},
      *     summary="Transfer money to another client",
-     *     security={{"sanctum":{}}},
+     *     security={{"passport":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
-     *         @OA\Schema(type="integer")
+     *         @OA\Schema(type="string")
      *     ),
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
      *             required={"destinataire_telephone","montant"},
-     *             @OA\Property(property="destinataire_telephone", type="string", example="1234567890"),
+     *             @OA\Property(property="destinataire_telephone", type="string", example="7734567890"),
      *             @OA\Property(property="montant", type="number", format="float", example=200.00)
      *         )
      *     ),
@@ -299,14 +339,29 @@ class CompteController extends Controller
         ]);
 
         $user = Auth::user();
-        $client = $user->client;
 
-        if (!$client || !$client->email_verified_at) {
+        if (!$user) {
             return response()->json([
                 'success' => false,
-                'message' => 'Votre email n\'est pas confirmé.',
-            ], 403);
+                'message' => 'Utilisateur non authentifié.',
+            ], 401);
         }
+
+        $client = $user->client;
+
+        if (!$client) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Client non trouvé.',
+            ], 404);
+        }
+
+        // if (!$client->email_verified_at) {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'Votre email n\'est pas confirmé.',
+        //     ], 403);
+        // }
 
         $compte = Compte::find($id);
 
@@ -341,18 +396,20 @@ class CompteController extends Controller
             ], 400);
         }
 
-        if (!$compte || !$compte->debiter($request->montant)) {
+        if ($compte->solde < $request->montant) {
             return response()->json([
                 'success' => false,
                 'message' => 'Solde insuffisant.',
             ], 400);
         }
 
-        // Credit recipient
         $compteDestinataire = $destinataire->compte;
-        if ($compteDestinataire) {
-            $compteDestinataire->crediter($request->montant);
-        }
+
+        // Deduct from sender's balance and add to recipient's balance
+        $compte->solde -= $request->montant;
+        $compte->save();
+        $compteDestinataire->solde += $request->montant;
+        $compteDestinataire->save();
 
         // Create transaction
         $transaction = Transaction::create([
@@ -367,6 +424,19 @@ class CompteController extends Controller
             'recipient_id' => $destinataire->id,
         ]);
 
+        // Create incoming transaction for recipient
+        Transaction::create([
+            'compte_id' => $compteDestinataire->id,
+            'type' => 'incoming_transfer',
+            'montant' => $request->montant,
+            'devise' => $compteDestinataire->devise,
+            'date' => now(),
+            'statut' => 'completed',
+            'reference' => 'TRF-IN-' . strtoupper(uniqid()),
+            'recipient_type' => 'self',
+            'recipient_id' => $compteDestinataire->client_id,
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => 'Transfert effectué avec succès.',
@@ -379,15 +449,122 @@ class CompteController extends Controller
 
     /**
      * @OA\Get(
+     *     path="/api/me",
+     *     tags={"Client"},
+     *     summary="Get authenticated client information, account, and transactions",
+     *     security={{"passport":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Informations client récupérées avec succès",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="user", type="object",
+     *                     @OA\Property(property="id", type="string", example="uuid"),
+     *                     @OA\Property(property="nom", type="string", example="Doe"),
+     *                     @OA\Property(property="prenom", type="string", example="John"),
+     *                     @OA\Property(property="telephone", type="string", example="1234567890"),
+     *                     @OA\Property(property="email", type="string", example="john@example.com"),
+     *                     @OA\Property(property="type", type="string", example="client"),
+     *                     @OA\Property(property="statut", type="string", example="active"),
+     *                     @OA\Property(property="is_verified", type="boolean", example=true),
+     *                     @OA\Property(property="date_creation", type="string", format="date-time"),
+     *                     @OA\Property(property="date_inscription", type="string", format="date-time")
+     *                 ),
+     *                 @OA\Property(property="compte", type="object",
+     *                     @OA\Property(property="numero_compte", type="string", example="CMPT-123456"),
+     *                     @OA\Property(property="solde", type="number", format="float", example=150000),
+     *                     @OA\Property(property="devise", type="string", example="XOF")
+     *                 ),
+     *                 @OA\Property(property="transactions", type="array",
+     *                     @OA\Items(
+     *                         @OA\Property(property="id", type="string", example="uuid"),
+     *                         @OA\Property(property="type", type="string", example="payment"),
+     *                         @OA\Property(property="montant", type="number", format="float", example=500.00),
+     *                         @OA\Property(property="devise", type="string", example="XOF"),
+     *                         @OA\Property(property="date", type="string", format="date-time"),
+     *                         @OA\Property(property="statut", type="string", example="completed"),
+     *                         @OA\Property(property="reference", type="string", example="PAY-123456")
+     *                     )
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=401, description="Non autorisé"),
+     *     @OA\Response(response=403, description="Email non confirmé")
+     * )
+     */
+    public function me(): JsonResponse
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utilisateur non authentifié.',
+            ], 401);
+        }
+
+        $client = $user->client;
+
+        if (!$client) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Client non trouvé.',
+            ], 404);
+        }
+
+        if (!$client->email_verified_at) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Votre email n\'est pas confirmé.',
+            ], 403);
+        }
+
+        $compte = $client->compte;
+
+        // Get recent transactions (last 10)
+        $transactions = $compte ? $compte->transactions()
+            ->orderBy('date', 'desc')
+            ->take(10)
+            ->get() : collect();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'user' => [
+                    'id' => $client->id,
+                    'nom' => $client->nom,
+                    'prenom' => $client->prenom,
+                    'telephone' => $client->telephone,
+                    'email' => $client->email,
+                    'type' => $user->role,
+                    'statut' => 'active', // Assuming active if email verified
+                    'is_verified' => !is_null($client->email_verified_at),
+                    'date_creation' => $client->created_at,
+                    'date_inscription' => $client->created_at,
+                ],
+                'compte' => $compte ? [
+                    'numero_compte' => $compte->numeroCompte,
+                    'solde' => $compte->solde,
+                    'devise' => $compte->devise,
+                ] : null,
+                'transactions' => $transactions,
+            ],
+        ]);
+    }
+
+    /**
+     * @OA\Get(
      *     path="/api/compte/{id}/transactions",
      *     tags={"Compte"},
      *     summary="Get client transaction history",
-     *     security={{"sanctum":{}}},
+     *     security={{"passport":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
-     *         @OA\Schema(type="integer")
+     *         @OA\Schema(type="string")
      *     ),
      *     @OA\Parameter(
      *         name="page",
@@ -436,9 +613,24 @@ class CompteController extends Controller
     public function getTransactions($id, Request $request): JsonResponse
     {
         $user = Auth::user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utilisateur non authentifié.',
+            ], 401);
+        }
+
         $client = $user->client;
 
-        if (!$client || !$client->email_verified_at) {
+        if (!$client) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Client non trouvé.',
+            ], 404);
+        }
+
+        if (!$client->email_verified_at) {
             return response()->json([
                 'success' => false,
                 'message' => 'Votre email n\'est pas confirmé.',

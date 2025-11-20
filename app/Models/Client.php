@@ -39,7 +39,7 @@ class Client extends Model
 
     public function consulterSolde()
     {
-        return $this->compte ? $this->compte->afficherSolde() : 0;
+        return $this->compte ? $this->compte->solde : 0;
     }
 
     public function effectuerTransfert($montant, $destinataire)

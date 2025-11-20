@@ -17,6 +17,20 @@ $app = new Illuminate\Foundation\Application(
 
 /*
 |--------------------------------------------------------------------------
+| Suppress Laravel Sanctum Deprecation Warnings
+|--------------------------------------------------------------------------
+|
+| Suppress deprecation warnings from Laravel Sanctum that are related to
+| implicit nullable parameters in PHP 8.1+. These warnings come from
+| vendor code that we cannot directly modify.
+|
+*/
+
+// Disable E_DEPRECATED warnings entirely for this application
+error_reporting(error_reporting() & ~E_DEPRECATED);
+
+/*
+|--------------------------------------------------------------------------
 | Bind Important Interfaces
 |--------------------------------------------------------------------------
 |
